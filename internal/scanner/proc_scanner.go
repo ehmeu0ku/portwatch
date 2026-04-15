@@ -2,7 +2,10 @@ package scanner
 
 import (
 	"bufio"
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -66,6 +69,8 @@ func parseProcNet(path string) ([]PortState, error) {
 }
 
 // parseHexAddr converts a hex-encoded address:port pair (little-endian) to ip:port.
+// The address field in /proc/net/tcp is stored as a little-endian 32-bit hex value
+// for IPv4, or four little-endian 32-bit hex values for IPv6.
 func parseHexAddr(hexAddr string) (string, int, error) {
 	parts := strings.Split(hexAddr, ":")
 	if len(parts) != 2 {
@@ -75,5 +80,38 @@ func parseHexAddr(hexAddr string) (string, int, error) {
 	if err != nil {
 		return "", 0, err
 	}
-	return "0.0.0.0", int(portVal), nil
+
+	ip, err := parseHexIP(parts[0])
+	if err != nil {
+		// Fall back to generic address if parsing fails
+		return "0.0.0.0", int(portVal), nil
+	}
+	return ip, int(portVal), nil
+}
+
+// parseHexIP decodes a little-endian hex-encoded IP address from /proc/net/tcp.
+// IPv4 addresses are 8 hex chars; IPv6 addresses are 32 hex chars.
+func parseHexIP(hexIP string) (string, error) {
+	b, err := hex.DecodeString(hexIP)
+	if err != nil {
+		return "", fmt.Errorf("decode hex IP %q: %w", hexIP, err)
+	}
+	switch len(b) {
+	case 4:
+		// IPv4: reverse byte order (little-endian)
+		v := binary.LittleEndian.Uint32(b)
+		ip := make(net.IP, 4)
+		binary.BigEndian.PutUint32(ip, v)
+		return ip.String(), nil
+	case 16:
+		// IPv6: four little-endian 32-bit words
+		ip := make(net.IP, 16)
+		for i := 0; i < 4; i++ {
+			v := binary.LittleEndian.Uint32(b[i*4 : i*4+4])
+			binary.BigEndian.PutUint32(ip[i*4:], v)
+		}
+		return ip.String(), nil
+	default:
+		return "", fmt.Errorf("unexpected IP length %d for %q", len(b), hexIP)
+	}
 }
