@@ -48,6 +48,15 @@ func TestResetAllowsImmediateReuse(t *testing.T) {
 	}
 }
 
+func TestResetUnknownKeyIsNoop(t *testing.T) {
+	// Resetting a key that was never seen should not panic or cause errors.
+	l := ratelimit.New(1 * time.Second)
+	l.Reset("tcp:1234")
+	if !l.Allow("tcp:1234") {
+		t.Fatal("expected Allow to pass for key that was only Reset, never seen")
+	}
+}
+
 func TestPurgeRemovesExpiredKeys(t *testing.T) {
 	l := ratelimit.New(10 * time.Millisecond)
 	l.Allow("tcp:7070")
