@@ -31,8 +31,8 @@ func TestLoadEmptyPath(t *testing.T) {
 
 func TestLoadFromFile(t *testing.T) {
 	data := map[string]interface{}{
-		"interval":     "10s",
-		"ignore_ports": []int{22, 80},
+		"interval":       "10s",
+		"ignore_ports":   []int{22, 80},
 		"alert_log_path": "/tmp/alerts.log",
 	}
 	f, err := os.CreateTemp(t.TempDir(), "portwatch-*.json")
@@ -83,5 +83,21 @@ func TestLoadMissingFile(t *testing.T) {
 	_, err := config.Load("/nonexistent/path/portwatch.json")
 	if err == nil {
 		t.Error("expected error for missing config file")
+	}
+}
+
+func TestLoadInvalidJSON(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "portwatch-*.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.WriteString("{not valid json"); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+
+	_, err = config.Load(f.Name())
+	if err == nil {
+		t.Error("expected error when loading file with invalid JSON")
 	}
 }
