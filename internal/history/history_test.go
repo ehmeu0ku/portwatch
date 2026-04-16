@@ -77,8 +77,15 @@ func TestSaveAndLoad(t *testing.T) {
 	if err := h2.Load(path); err != nil {
 		t.Fatalf("Load failed: %v", err)
 	}
-	if len(h2.Entries()) != 2 {
-		t.Fatalf("expected 2 entries after load, got %d", len(h2.Entries()))
+	entries := h2.Entries()
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries after load, got %d", len(entries))
+	}
+	if entries[0].State.Port != 22 || entries[0].Event != "new" {
+		t.Errorf("unexpected first entry: port=%d event=%q", entries[0].State.Port, entries[0].Event)
+	}
+	if entries[1].State.Port != 22 || entries[1].Event != "gone" {
+		t.Errorf("unexpected second entry: port=%d event=%q", entries[1].State.Port, entries[1].Event)
 	}
 }
 
