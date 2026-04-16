@@ -101,3 +101,23 @@ func TestLoadInvalidJSON(t *testing.T) {
 		t.Error("expected error when loading file with invalid JSON")
 	}
 }
+
+func TestValidateAcceptsValidInterval(t *testing.T) {
+	tests := []struct {
+		name     string
+		interval time.Duration
+	}{
+		{"exactly one second", 1 * time.Second},
+		{"default five seconds", 5 * time.Second},
+		{"one minute", time.Minute},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := config.DefaultConfig()
+			cfg.Interval = tc.interval
+			if err := cfg.Validate(); err != nil {
+				t.Errorf("unexpected validation error for interval %v: %v", tc.interval, err)
+			}
+		})
+	}
+}
