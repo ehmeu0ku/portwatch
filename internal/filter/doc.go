@@ -10,6 +10,9 @@
 //  2. Explicitly ignored ports — dropped when the port appears in
 //     Config.IgnoredPorts.
 //
+// The filter is stateless and safe for concurrent use; multiple goroutines
+// may call Apply simultaneously on the same Filter instance.
+//
 // Usage:
 //
 //	f := filter.New(cfg)
