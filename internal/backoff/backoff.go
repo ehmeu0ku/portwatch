@@ -60,3 +60,13 @@ func (b *Backoff) Reset() {
 func (b *Backoff) Attempt() int {
 	return b.attempt
 }
+
+// NextWithMax returns the duration to wait, capped at the provided maximum.
+// This is useful for callers that need a tighter bound for a specific retry.
+func (b *Backoff) NextWithMax(max time.Duration) time.Duration {
+	d := b.Next()
+	if d > max {
+		return max
+	}
+	return d
+}
