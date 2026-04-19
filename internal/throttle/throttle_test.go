@@ -50,6 +50,15 @@ func TestResetAllowsImmediateReuse(t *testing.T) {
 	}
 }
 
+func TestResetUnknownKeyIsNoop(t *testing.T) {
+	th := New(5 * time.Second)
+	// Resetting a key that was never set should not panic or affect Len.
+	th.Reset("tcp:8080")
+	if th.Len() != 0 {
+		t.Fatalf("expected 0 after resetting unknown key, got %d", th.Len())
+	}
+}
+
 func TestLenTracksKeys(t *testing.T) {
 	th := New(5 * time.Second)
 	if th.Len() != 0 {
