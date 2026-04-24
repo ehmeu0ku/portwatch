@@ -1,7 +1,6 @@
 package snapshot_test
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -64,6 +63,30 @@ func TestSaveAndLoad(t *testing.T) {
 	}
 }
 
+// TestSaveAndLoadPreservesTimestamp verifies that the CapturedAt timestamp
+// survives a round-trip through Save and Load without loss of precision.
+func TestSaveAndLoadPreservesTimestamp(t *testing.T) {
+	snap := snapshot.New(nil)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "snap.json")
+
+	if err := snap.Save(path); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	loaded, err := snapshot.Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	// Compare using Unix seconds to avoid sub-second JSON encoding differences.
+	if loaded.CapturedAt.Unix() != snap.CapturedAt.Unix() {
+		t.Errorf("CapturedAt mismatch after round-trip: got %v, want %v",
+			loaded.CapturedAt, snap.CapturedAt)
+	}
+}
+
 func TestLoadMissingFileReturnsError(t *testing.T) {
 	_, err := snapshot.Load("/nonexistent/path/snap.json")
 	if err == nil {
@@ -89,5 +112,4 @@ func TestSummaryFormat(t *testing.T) {
 	if summary == "" {
 		t.Error("Summary should not be empty")
 	}
-	_ = os.Stdout // ensure os import used via t.TempDir indirectly
 }
